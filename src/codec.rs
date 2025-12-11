@@ -6,6 +6,7 @@ use zerocopy::{FromBytes, Immutable, IntoBytes};
 pub enum PldmCodecError {
     BufferTooShort,
     Unsupported,
+    InvalidData,
 }
 
 /// A trait for encoding and decoding PLDM (Platform Level Data Model) messages.
@@ -37,7 +38,39 @@ pub trait PldmCodec: core::fmt::Debug + Sized {
     fn decode(buffer: &[u8]) -> Result<Self, PldmCodecError>;
 }
 
+/// A trait for encoding and decoding PLDM messages with explicit lifetime requirements.
+///
+/// This trait is similar to `PldmCodec` but supports types that borrow data from the buffer
+/// during decoding, requiring an explicit lifetime parameter.
+pub trait PldmCodecWithLifetime<'a>: core::fmt::Debug + Sized {
+    /// Encodes the PLDM message into the provided byte buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `buffer` - A mutable reference to a byte slice where the encoded message will be stored.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the size of the encoded message on success, or a `PldmCodecError` on failure.
+    fn encode(&self, buffer: &mut [u8]) -> Result<usize, PldmCodecError>;
+
+    /// Decodes a PLDM message from the provided byte buffer.
+    ///
+    /// # Arguments
+    ///
+    /// * `buffer` - A reference to a byte slice containing the encoded message. The decoded
+    ///   type may hold references to this buffer.
+    ///
+    /// # Returns
+    ///
+    /// A `Result` containing the decoded message on success, or a `PldmCodecError` on failure.
+    fn decode(buffer: &'a [u8]) -> Result<Self, PldmCodecError>;
+}
+
 // Default implementation of PldmCodec for types that can leverage zerocopy.
+// TODO: can we generalize this to use sub-struct encodes when possible?
+// There are structs like PldmFirmwareString that contain variable-length data
+// that would need special handling.
 impl<T> PldmCodec for T
 where
     T: core::fmt::Debug + Sized + FromBytes + IntoBytes + Immutable,

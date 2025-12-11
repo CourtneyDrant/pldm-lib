@@ -31,6 +31,14 @@ pub enum FwUpdateCmd {
     GetStatus = 0x1B,
     CancelUpdateComponent = 0x1C,
     CancelUpdate = 0x1D,
+    // new
+    QueryDownstreamDevices = 0x03, // defined in DSP0267
+    QueryDownstreamIdentifiers = 0x04,
+    GetDownstreamFirmwareParameters = 0x05,
+    RequestDownstreamDeviceUpdate = 0x20,
+    GetPackageData = 0x11,
+    GetDeviceMetaData = 0x12,
+    GetMetaData = 0x19,
 }
 
 impl TryFrom<u8> for FwUpdateCmd {
@@ -51,6 +59,13 @@ impl TryFrom<u8> for FwUpdateCmd {
             0x1B => Ok(FwUpdateCmd::GetStatus),
             0x1C => Ok(FwUpdateCmd::CancelUpdateComponent),
             0x1D => Ok(FwUpdateCmd::CancelUpdate),
+            0x03 => Ok(FwUpdateCmd::QueryDownstreamDevices),
+            0x04 => Ok(FwUpdateCmd::QueryDownstreamIdentifiers),
+            0x05 => Ok(FwUpdateCmd::GetDownstreamFirmwareParameters),
+            0x20 => Ok(FwUpdateCmd::RequestDownstreamDeviceUpdate),
+            0x11 => Ok(FwUpdateCmd::GetPackageData),
+            0x12 => Ok(FwUpdateCmd::GetDeviceMetaData),
+            0x19 => Ok(FwUpdateCmd::GetMetaData),
             _ => Err(PldmError::UnsupportedCmd),
         }
     }
@@ -78,6 +93,9 @@ pub enum FwUpdateCompletionCode {
     InvalidTransferOperationFlag = 0x91,
     ActivatePendingImageNotPermitted = 0x92,
     PackageDataError = 0x93,
+    NoOpaqueData = 0x94,
+    UpdateSecurityRevisionNotPermitted = 0x95,
+    DownstreamDeviceListChanged = 0x96,
 }
 
 impl TryFrom<u8> for FwUpdateCompletionCode {
@@ -267,7 +285,7 @@ pub fn get_descriptor_length(descriptor_type: DescriptorType) -> usize {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, FromBytes)]
 #[repr(C)]
 pub struct Descriptor {
     pub descriptor_type: u16,
@@ -313,9 +331,52 @@ impl Descriptor {
     pub fn codec_size_in_bytes(&self) -> usize {
         core::mem::size_of::<u16>() * 2 + self.descriptor_length as usize
     }
+
+    /// Calculates the total length of a list of descriptors from a blob.
+    ///
+    /// This simplifies the use case where multiple descriptors are used in a message,
+    /// and the total length needs to be calculated.
+    /// It follows the linked list of descriptors by decoding each one in sequence.
+    ///
+    /// The blob must start with the first descriptor, but may contain additional data after the last descriptor.
+    ///
+    /// ```rust
+    /// use pldm_lib::protocol::firmware_update::{Descriptor, DescriptorType, get_descriptor_length};
+    /// use crate::pldm_lib::codec::PldmCodec;
+    ///
+    /// let dsc_0 = Descriptor::new(DescriptorType::PciVendorId, &[0x11, 0x22]).unwrap();
+    /// let dsc_1 = Descriptor::new(DescriptorType::PciVendorId, &[0x33, 0x44]).unwrap();
+    /// const BLOB_LEN: usize = (size_of::<u16>() * 2 + 2 * size_of::<u8>()) * 2 as usize;
+    /// let mut blob = [0u8; BLOB_LEN];
+    ///
+    /// let offset = dsc_0.encode(&mut blob[0..]).unwrap();
+    /// let _ = dsc_1.encode(&mut blob[offset..]).unwrap();
+    ///
+    /// let total_len = Descriptor::try_get_descriptor_length_from_blob(&blob, 2).unwrap();
+    /// assert_eq!(total_len, dsc_0.codec_size_in_bytes() + dsc_1.codec_size_in_bytes());
+    /// ```
+    pub fn try_get_descriptor_length_from_blob(
+        blob: &[u8],
+        desc_count: usize,
+    ) -> Result<usize, PldmCodecError> {
+        let mut offset = 0;
+        let mut total_len = 0;
+
+        for _ in 0..desc_count {
+            let descriptor = Descriptor::decode(&blob[offset..])?;
+            total_len += descriptor.codec_size_in_bytes();
+            offset += descriptor.codec_size_in_bytes();
+        }
+
+        Ok(total_len)
+    }
 }
 
 impl PldmCodec for Descriptor {
+    /// Custom encode implementation of PldmCodec for Descriptor to handle variable-length.
+    ///
+    /// The descriptor_data field is variable-length, so we need to ensure that only the valid portion
+    /// of the array is encoded, not all data of the fixed size array of length [DESCRIPTOR_DATA_MAX_LEN].
     fn encode(&self, buffer: &mut [u8]) -> Result<usize, PldmCodecError> {
         if buffer.len() < self.codec_size_in_bytes() {
             return Err(PldmCodecError::BufferTooShort);
@@ -340,6 +401,10 @@ impl PldmCodec for Descriptor {
         Ok(offset)
     }
 
+    /// Custom decode implementation of PldmCodec for Descriptor to handle variable-length.
+    ///
+    /// The descriptor_data field is variable-length, so we need to ensure that only the valid portion
+    /// of the array is decoded, not all data of the fixed size array of length [DESCRIPTOR_DATA_MAX_LEN].
     fn decode(buffer: &[u8]) -> Result<Self, PldmCodecError> {
         let mut offset = 0;
 
@@ -375,14 +440,17 @@ impl PldmCodec for Descriptor {
 }
 
 bitfield! {
+    /// FDPCapabilitiesDuringUpdate
+    ///
+    /// DSP0267, Table 20
     #[derive(Clone, Copy, FromBytes, IntoBytes, Immutable, PartialEq, Eq, Default)]
     pub struct FirmwareDeviceCapability(u32);
     impl Debug;
-    pub u32, reserved, _: 31, 10;
+    pub u32, reserved_0, _: 31, 10;
     pub u32, svn_update_support, set_svn_update_support: 9;
     pub u32, downgrade_restriction, set_downgrade_restriction: 8;
     pub u32, update_mode_restriction, set_update_mode_restriction: 7, 4;
-    pub u32, partial_updates, set_partial_updates: 3;
+    pub u32, reserved_1, _: 3;
     pub u32, host_func_reduced, set_func_reduced: 2;
     pub u32, update_failure_retry, set_update_failure_retry: 1;
     pub u32, update_failure_recovery, set_update_failure_recovery: 0;
@@ -448,7 +516,8 @@ impl TryFrom<u16> for ComponentClassification {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, FromBytes, IntoBytes)]
+#[repr(C, packed)]
 pub struct PldmFirmwareString {
     pub str_type: u8,
     pub str_len: u8,
@@ -490,6 +559,68 @@ impl PldmFirmwareString {
         Ok(PldmFirmwareString {
             str_type: str_type as u8,
             str_len: fw_str.len() as u8,
+            str_data,
+        })
+    }
+}
+
+/// This implementation is necessary to ensure, that only the valid portion of
+/// the str_data array is encoded/decoded, not it's entirety.
+/// For that we have to ensure, that [PldmFirmwareString] does not implement all
+/// the traits automatically derived by [zerocopy].
+impl PldmCodec for PldmFirmwareString {
+    fn encode(&self, buffer: &mut [u8]) -> Result<usize, PldmCodecError> {
+        if buffer.len() < self.str_len as usize + 2 * size_of::<u8>() {
+            return Err(PldmCodecError::BufferTooShort);
+        }
+        let mut offset = 0;
+
+        self.str_type
+            .write_to(&mut buffer[offset..offset + core::mem::size_of::<u8>()])
+            .unwrap();
+        offset += core::mem::size_of::<u8>();
+
+        self.str_len
+            .write_to(&mut buffer[offset..offset + core::mem::size_of::<u8>()])
+            .unwrap();
+        offset += core::mem::size_of::<u8>();
+
+        self.str_data[..self.str_len as usize]
+            .write_to(&mut buffer[offset..offset + self.str_len as usize])
+            .unwrap();
+
+        Ok(offset + self.str_len as usize)
+    }
+
+    fn decode(buffer: &[u8]) -> Result<Self, PldmCodecError> {
+        let mut offset = 0;
+
+        let str_type = u8::read_from_bytes(
+            buffer
+                .get(offset..offset + core::mem::size_of::<u8>())
+                .ok_or(PldmCodecError::BufferTooShort)?,
+        )
+        .unwrap();
+        offset += core::mem::size_of::<u8>();
+
+        let str_len = u8::read_from_bytes(
+            buffer
+                .get(offset..offset + core::mem::size_of::<u8>())
+                .ok_or(PldmCodecError::BufferTooShort)?,
+        )
+        .unwrap();
+        offset += core::mem::size_of::<u8>();
+
+        let mut str_data = [0u8; PLDM_FWUP_IMAGE_SET_VER_STR_MAX_LEN];
+        str_data[..str_len as usize].copy_from_slice(
+            buffer
+                .get(offset..offset + str_len as usize)
+                .ok_or(PldmCodecError::BufferTooShort)?,
+        );
+
+        Ok(PldmFirmwareString {
+            str_type,
+            str_len,
             str_data,
         })
     }
@@ -843,10 +974,28 @@ mod test {
             descriptor.descriptor_length,
             get_descriptor_length(DescriptorType::Uuid) as u16
         );
-        let mut buffer = [0u8; 512];
+        let mut buffer = [0u8; core::mem::size_of::<Descriptor>()];
         descriptor.encode(&mut buffer).unwrap();
+
         let decoded_descriptor = Descriptor::decode(&buffer).unwrap();
         assert_eq!(descriptor, decoded_descriptor);
+
+        let raw_descriptor = [
+            0xff, 0xff, // Type=VendorDefined
+            0x10, 0x00, // size=16
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E,
+            0x0F, 0x10,
+        ];
+        let decoded_raw_descriptor = Descriptor::decode(&raw_descriptor).unwrap();
+        assert_eq!(
+            decoded_raw_descriptor.descriptor_type,
+            DescriptorType::VendorDefined as u16,
+        );
+        assert_eq!(decoded_raw_descriptor.descriptor_length, 16,);
+        assert_eq!(
+            &decoded_raw_descriptor.descriptor_data[..16],
+            &raw_descriptor[4..20]
+        );
     }
 
     #[test]
@@ -880,5 +1029,41 @@ mod test {
         let active_fw_ver = component_parameter_entry.get_active_fw_ver();
         assert_eq!(active_firmware_string, active_fw_ver);
         assert!(active_firmware_string < pending_firmware_string);
+    }
+
+    #[test]
+    fn test_pldm_firmware_string_codec() {
+        let test_str = "test";
+        let fw_string = PldmFirmwareString::new("ASCII", &test_str).unwrap();
+        assert_eq!(fw_string.str_type, VersionStringType::Ascii as u8);
+        assert_eq!(fw_string.str_len, test_str.len() as u8);
+        assert_eq!(&fw_string.str_data[..fw_string.str_len as usize], b"test");
+
+        let mut buffer = [0u8; 2 + 4];
+        let bytes = fw_string.encode(&mut buffer).unwrap();
+        assert_eq!(bytes, 2 + 4);
+
+        let decoded_fw_string = PldmFirmwareString::decode(&buffer).unwrap();
+        assert_eq!(fw_string, decoded_fw_string);
+
+        let empty_fw_string = PldmFirmwareString::new("ASCII", "").unwrap();
+        assert_eq!(empty_fw_string.str_type, VersionStringType::Ascii as u8);
+        assert_eq!(empty_fw_string.str_len, 0);
+        let mut empty_buffer = [0u8; 2];
+        let bytes = empty_fw_string.encode(&mut empty_buffer).unwrap();
+        assert_eq!(bytes, 2);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_pldm_firmware_string_codec_invalid_size() {
+        let test_str = "test";
+        let fw_string = PldmFirmwareString::new("ASCII", &test_str).unwrap();
+        assert_eq!(fw_string.str_type, VersionStringType::Ascii as u8);
+        assert_eq!(fw_string.str_len, test_str.len() as u8);
+        assert_eq!(&fw_string.str_data[..fw_string.str_len as usize], b"test");
+
+        let mut buffer = [0u8; 0];
+        fw_string.encode(&mut buffer).unwrap();
     }
 }
