@@ -1,7 +1,20 @@
-// Licensed under the Apache-2.0 license
+// Copyright 2025
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use crate::codec::{PldmCodecError, PldmCodecWithLifetime};
 use crate::protocol::base::{
-    InstanceId, PldmMsgHeader, PldmMsgType, PldmSupportedType, PLDM_MSG_HEADER_LEN,
+    InstanceId, PLDM_MSG_HEADER_LEN, PldmMsgHeader, PldmMsgType, PldmSupportedType,
 };
 use crate::protocol::firmware_update::FwUpdateCmd;
 use zerocopy::{FromBytes, Immutable, IntoBytes};
@@ -56,8 +69,8 @@ impl<'a> RequestFirmwareDataResponse<'a> {
     pub fn new(
         instance_id: InstanceId,
         completion_code: u8,
-        data: &'a [u8],
-    ) -> RequestFirmwareDataResponse<'a> {
+        data: &'_ [u8],
+    ) -> RequestFirmwareDataResponse<'_> {
         let fixed = RequestFirmwareDataResponseFixed {
             hdr: PldmMsgHeader::new(
                 instance_id,
