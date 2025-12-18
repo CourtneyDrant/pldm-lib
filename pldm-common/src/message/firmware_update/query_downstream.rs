@@ -15,8 +15,8 @@
 use crate::codec::{PldmCodec, PldmCodecError, PldmCodecWithLifetime};
 use crate::error::PldmError;
 use crate::protocol::base::{
-    InstanceId, PLDM_MSG_HEADER_LEN, PldmBaseCompletionCode, PldmMsgHeader, PldmMsgType,
-    PldmSupportedType, TransferOperationFlag,
+    InstanceId, PldmBaseCompletionCode, PldmMsgHeader, PldmMsgType, PldmSupportedType,
+    TransferOperationFlag, PLDM_MSG_HEADER_LEN,
 };
 
 use crate::pldm_completion_code;

@@ -2,8 +2,25 @@
 name = "pldm-lib"
 version = "0.1.0"
 authors = ["Caliptra contributors", "OpenPRoT contributors"]
-edition = "2024"
+edition = "2021"
+
+[workspace]
+members = [
+    "pldm-common",
+    "pldm-interface"
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Caliptra contributors", "OpenPRoT contributors"]
+edition = "2021"
+
+[workspace.dependencies]
+pldm-common = { path = "pldm-common" }
+pldm-interface = { path = "pldm-interface" }
+bitfield = "0.14.0"
+zerocopy = { version = "0.8.17", features = ["derive"] }
 
 [dependencies]
-zerocopy = { version = "0.8.17", features = ["derive"] }
-bitfield = "0.14.0"
+pldm-common.workspace = true
+pldm-interface.workspace = true

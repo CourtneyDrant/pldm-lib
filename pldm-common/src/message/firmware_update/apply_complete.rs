@@ -14,7 +14,7 @@
 
 use crate::error::PldmError;
 use crate::protocol::base::{
-    InstanceId, PLDM_MSG_HEADER_LEN, PldmMsgHeader, PldmMsgType, PldmSupportedType,
+    InstanceId, PldmMsgHeader, PldmMsgType, PldmSupportedType, PLDM_MSG_HEADER_LEN,
 };
 use crate::protocol::firmware_update::{ComponentActivationMethods, FwUpdateCmd};
 use zerocopy::{FromBytes, Immutable, IntoBytes};

@@ -14,10 +14,10 @@
 
 use crate::codec::{PldmCodec, PldmCodecError};
 use crate::protocol::base::{
-    InstanceId, PLDM_MSG_HEADER_LEN, PldmMsgHeader, PldmMsgType, PldmSupportedType,
+    InstanceId, PldmMsgHeader, PldmMsgType, PldmSupportedType, PLDM_MSG_HEADER_LEN,
 };
 use crate::protocol::firmware_update::{
-    FwUpdateCmd, PLDM_FWUP_IMAGE_SET_VER_STR_MAX_LEN, PldmFirmwareString,
+    FwUpdateCmd, PldmFirmwareString, PLDM_FWUP_IMAGE_SET_VER_STR_MAX_LEN,
 };
 use zerocopy::{FromBytes, Immutable, IntoBytes};
 

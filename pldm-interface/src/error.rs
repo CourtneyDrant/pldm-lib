@@ -11,7 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-#![no_std]
 
-pub use pldm_common;
-pub use pldm_interface;
+use crate::firmware_device::fd_ops::FdOpsError;
+use pldm_common::codec::PldmCodecError;
+use pldm_common::error::{PldmError, UtilError};
+
+/// Handle non-protocol specific error conditions.
+#[derive(Debug)]
+pub enum MsgHandlerError {
+    Codec(PldmCodecError),
+    PldmCommon(PldmError),
+    Util(UtilError),
+    FdOps(FdOpsError),
+    FdInitiatorModeError,
+    NotReady,
+}
