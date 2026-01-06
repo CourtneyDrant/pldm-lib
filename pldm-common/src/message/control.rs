@@ -14,8 +14,8 @@
 
 use crate::error::PldmError;
 use crate::protocol::base::{
-    InstanceId, PLDM_MSG_HEADER_LEN, PldmControlCmd, PldmMsgHeader, PldmMsgType, PldmSupportedType,
-    TransferOperationFlag, TransferRespFlag,
+    InstanceId, PldmControlCmd, PldmMsgHeader, PldmMsgType, PldmSupportedType,
+    TransferOperationFlag, TransferRespFlag, PLDM_MSG_HEADER_LEN,
 };
 use crate::protocol::version::{PldmVersion, ProtocolVersionStr, Ver32};
 use zerocopy::{FromBytes, Immutable, IntoBytes};

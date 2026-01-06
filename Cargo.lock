@@ -9,11 +9,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d7e60934ceec538daadb9d8432424ed043a904d8e0243f3c6446bce549a46ac"
 
 [[package]]
-name = "pldm-lib"
+name = "pldm-common"
 version = "0.1.0"
 dependencies = [
  "bitfield",
  "zerocopy",
+]
+
+[[package]]
+name = "pldm-interface"
+version = "0.1.0"
+dependencies = [
+ "bitfield",
+ "pldm-common",
+ "zerocopy",
+]
+
+[[package]]
+name = "pldm-lib"
+version = "0.1.0"
+dependencies = [
+ "pldm-common",
+ "pldm-interface",
 ]
 
 [[package]]

@@ -353,8 +353,8 @@ impl Descriptor {
     /// The blob must start with the first descriptor, but may contain additional data after the last descriptor.
     ///
     /// ```rust
-    /// use pldm_lib::protocol::firmware_update::{Descriptor, DescriptorType, get_descriptor_length};
-    /// use crate::pldm_lib::codec::PldmCodec;
+    /// use pldm_common::protocol::firmware_update::{Descriptor, DescriptorType, get_descriptor_length};
+    /// use crate::pldm_common::codec::PldmCodec;
     ///
     /// let dsc_0 = Descriptor::new(DescriptorType::PciVendorId, &[0x11, 0x22]).unwrap();
     /// let dsc_1 = Descriptor::new(DescriptorType::PciVendorId, &[0x33, 0x44]).unwrap();
