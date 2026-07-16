@@ -3,6 +3,7 @@ name = "pldm-lib"
 version = "0.1.0"
 authors = ["Caliptra contributors", "OpenPRoT contributors"]
 edition = "2021"
+license.workspace = true
 
 [workspace]
 members = [
@@ -14,6 +15,7 @@ members = [
 version = "0.1.0"
 authors = ["Caliptra contributors", "OpenPRoT contributors"]
 edition = "2021"
+license = "Apache-2.0"
 
 [workspace.dependencies]
 pldm-common = { path = "pldm-common" }

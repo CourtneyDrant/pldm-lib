@@ -1,0 +1,16 @@
+[licenses]
+allow = [
+    "Apache-2.0",
+    "MIT",
+    "Unicode-3.0",
+]
+
+[bans]
+multiple-versions = "warn"
+
+[advisories]
+ignore = []
+
+[sources]
+unknown-registry = "warn"
+unknown-git = "warn"
