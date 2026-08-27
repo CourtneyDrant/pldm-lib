@@ -1191,6 +1191,11 @@ mod tests {
                 NonFunctioningComponentBitmap::new(0),
             ))
         }
+
+        fn now(&self) -> pldm_common::protocol::firmware_update::PldmFdTime {
+            // Return a fixed timestamp for testing
+            crate::config::DEFAULT_FD_T1_TIMEOUT + 1
+        }
     }
 
     fn new_test_fd_ctx() -> FirmwareDeviceContext<'static, TestFdOps> {
