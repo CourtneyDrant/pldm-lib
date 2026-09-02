@@ -43,10 +43,11 @@ Additional components can be updated by repeating the `ReadyXfer` through
 `Apply` portion before activation. Cancellation, operation failure, or a T1
 timeout can take the flow to another state or back to `Idle`.
 
-`FdOpsError` values are generally converted to `MsgHandlerError::FdOps` and
-returned to the caller. The exception is `query_download_progress`: its error
-is intentionally ignored by `get_status_rsp`, which reports the default
-progress value instead.
+Every `FdOpsError` is converted to `MsgHandlerError::FdOps` and returned to the
+caller, except for `query_download_progress`: `get_status_rsp` ignores that
+error and leaves whatever the callback wrote in `ProgressPercent`. If the
+callback wrote nothing, that is `ProgressPercent::default()`, which is 101
+(`PROGRESS_PERCENT_NOT_SUPPORTED`).
 
 ## `FdOps` callback map
 
