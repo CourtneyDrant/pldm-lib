@@ -109,9 +109,11 @@ allows the platform to select missing ranges or resume a partial transfer. The
 context validates the range against the component image size, permits the PLDM
 maximum padding, and caps the request to the negotiated transfer size.
 
-Called by `fd_progress_download` when the context is in `Download`, the current
-FD request is ready, and transfer completion has not yet been reported. The
-result is encoded into `RequestFirmwareData`.
+Called by `fd_progress_download` when the context is in `Download`, an FD
+request may be sent (state `Ready`, or `Sent` with the T2 retry time elapsed),
+and transfer completion has not yet been reported. The result is encoded into
+`RequestFirmwareData`. The callback runs again on every T2 retry, so it can
+return a different range while a `RequestFirmwareData` is still outstanding.
 
 ### `download_fw_data`
 
