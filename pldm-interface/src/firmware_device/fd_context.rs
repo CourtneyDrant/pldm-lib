@@ -1193,7 +1193,8 @@ mod tests {
         }
 
         fn now(&self) -> pldm_common::protocol::firmware_update::PldmFdTime {
-            // Return a fixed timestamp for testing
+            // Fixed clock past T1, so a test that leaves fd_t1_update_ts at 0
+            // is already timed out.
             crate::config::DEFAULT_FD_T1_TIMEOUT + 1
         }
     }
