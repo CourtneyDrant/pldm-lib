@@ -185,9 +185,10 @@ Called from three paths:
   `Download`, `Verify`, or an incomplete/failed `Apply`.
 - `cancel_update_rsp`, for a complete update cancellation in the same active
   operation states.
-- `fd_progress`, when a sent FD request exceeds the T1 timeout in `Download`,
-  `Verify`, or `Apply`; the context then transitions to `Idle` and rejects a
-  late UA response.
+- `fd_progress`, when an FD request is outstanding (`FdReqState::Sent`) in
+  `Download`, `Verify`, or `Apply` and the UA has been quiet for longer than
+  the T1 timeout; the context then transitions to `Idle` and rejects a late UA
+  response.
 
 ### `get_non_functional_component_info`
 
